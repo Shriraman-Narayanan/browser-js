@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Agent POC - Multi-Tool Reasoning</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="app-header">
+            <div class="container">
+                <h1 class="app-title">LLM Agent POC</h1>
+                <p class="app-subtitle">Multi-Tool Reasoning with Google Search, AI Pipe & JavaScript Execution</p>
+                <div class="header-actions">
+                    <button class="btn btn--outline btn--sm" id="configureProviderBtn">⚙️ Configure Provider</button>
+                    <button class="btn btn--secondary btn--sm" id="toolConfigBtn">🔧 Tool Settings</button>
+                    <button class="btn btn--outline btn--sm" id="clearChatBtn">🗑️ Clear Chat</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Chat Interface -->
+        <main class="main-content container">
+            <!-- Connection Status -->
+            <div class="status-bar">
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-indicator offline"></span>
+                    <span class="status-text">Not connected</span>
+                </div>
+                <div class="agent-status" id="agentStatus">
+                    <span class="agent-state">Ready</span>
+                </div>
+            </div>
+
+            <!-- Chat Messages Area -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="welcome-message">
+                        <div class="message-avatar agent-avatar">🤖</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-sender">Agent</span>
+                                <span class="message-time">System</span>
+                            </div>
+                            <div class="message-text">
+                                Hello! I'm your AI agent with access to web search, API calls, and JavaScript execution. 
+                                Configure your LLM provider and ask me anything!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div class="typing-indicator hidden" id="typingIndicator">
+                    <div class="message-avatar agent-avatar">🤖</div>
+                    <div class="typing-animation">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container">
+                <div class="input-wrapper">
+                    <textarea id="messageInput" class="message-input" placeholder="Ask me anything... I can search the web, make API calls, or execute JavaScript code!" rows="1"></textarea>
+                    <button class="btn btn--primary send-btn" id="sendBtn" disabled>
+                        <span class="send-icon">📤</span>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span class="input-hint">Press Enter to send, Shift+Enter for new line</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Provider Configuration Modal -->
+        <div class="modal hidden" id="providerModal">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>LLM Provider Configuration</h3>
+                    <button class="modal-close" id="closeProviderModal">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="providerSelect" class="form-label">Provider</label>
+                        <select id="providerSelect" class="form-control">
+                            <option value="">Select a provider...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="modelSelect" class="form-label">Model</label>
+                        <select id="modelSelect" class="form-control" disabled>
+                            <option value="">Select a model...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="apiKeyInput" class="form-label">API Key</label>
+                        <div class="input-with-button">
+                            <input type="password" id="apiKeyInput" class="form-control" placeholder="Enter your API key">
+                            <button class="btn btn--outline btn--sm" id="toggleApiKey">👁️</button>
+                        </div>
+                        <div class="form-help">Your API key is stored locally and never sent to our servers</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="baseUrlInput" class="form-label">Base URL</label>
+                        <input type="url" id="baseUrlInput" class="form-control" placeholder="API base URL (auto-populated)" readonly>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn--outline" id="testConnectionBtn" disabled>Test Connection</button>
+                        <button class="btn btn--primary" id="saveConfigBtn" disabled>Save Configuration</button>
+                    </div>
+                    <div class="connection-result hidden" id="connectionResult"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tool Configuration Modal -->
+        <div class="modal hidden" id="toolModal">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Tool Configuration</h3>
+                    <button class="modal-close" id="closeToolModal">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tool-section">
+                        <h4>🔍 Google Search</h4>
+                        <div class="tool-toggle">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="googleSearchEnabled" checked>
+                                <span class="checkbox-label">Enable Google Search</span>
+                            </label>
+                        </div>
+                        <div class="tool-config" id="googleSearchConfig">
+                            <div class="form-group">
+                                <label for="googleApiKey" class="form-label">Google API Key</label>
+                                <input type="password" id="googleApiKey" class="form-control" placeholder="Enter Google Custom Search API key">
+                            </div>
+                            <div class="form-group">
+                                <label for="searchEngineId" class="form-label">Search Engine ID</label>
+                                <input type="text" id="searchEngineId" class="form-control" placeholder="Enter Custom Search Engine ID">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tool-section">
+                        <h4>🔗 AI Pipe API</h4>
+                        <div class="tool-toggle">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="aiPipeEnabled" checked>
+                                <span class="checkbox-label">Enable AI Pipe Requests</span>
+                            </label>
+                        </div>
+                        <div class="form-help">AI Pipe provides flexible API access without backend configuration</div>
+                    </div>
+
+                    <div class="tool-section">
+                        <h4>⚡ JavaScript Execution</h4>
+                        <div class="tool-toggle">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="jsExecutionEnabled" checked>
+                                <span class="checkbox-label">Enable JavaScript Execution</span>
+                            </label>
+                        </div>
+                        <div class="form-help">Sandboxed JavaScript execution with limited scope for security</div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="btn btn--primary" id="saveToolConfigBtn">Save Tool Configuration</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Container -->
+        <div class="alert-container" id="alertContainer"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
